@@ -179,13 +179,11 @@ void setup(void) {
   Wire.begin();
   sensorsSetup();
 
-  json_data = getData();
-  deserializeJson(temp_data, json_data);
-
   www_username = config_settings["www_username"];
   www_password = config_settings["www_password"];
 
   server.on("/", []() {
+    json_data = getData();
     server.send(200, "application/json", json_data);
   });
 
@@ -238,17 +236,6 @@ void setup(void) {
 
     String content;
     content += getHeader("Авторежим реле");
-
-    content += "<h4>";
-    if(temp_data["hdc1080"]["temperature"].as<int>() < (config_settings["set_temp"].as<int>() - 2)){
-      content += "Ввімкнення реле";
-    } else if (temp_data["hdc1080"]["temperature"].as<int>() > (config_settings["set_temp"].as<int>() + 2)) {
-      content += "Вимкнення реле";
-    } else {
-      content += "Стан реле покищо не потрібно змінювати";
-    }
-    content += "</h4>";
-
     content += "<script>window.setTimeout(function(){window.location.href = '/config';}, 3000);</script>";
     content += getFooter();
 
