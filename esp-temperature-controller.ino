@@ -18,7 +18,6 @@ const char *ap_ssid = APSSID;
 const char *ap_password = APPSK;
 
 long lastUpdateTime = 0;
-long timing = 0;
 long previousMillis = millis();
 long interval = 30000;
 
@@ -181,6 +180,7 @@ void setup(void) {
   sensorsSetup();
 
   json_data = getData();
+  deserializeJson(temp_data, json_data);
 
   www_username = config_settings["www_username"];
   www_password = config_settings["www_password"];
@@ -366,9 +366,13 @@ void loop(void) {
     work_mode = loadState();
     open_mode = 0;
   }
-   if (lastUpdateTime == 0 || (millis() - lastUpdateTime > 30000))
-   {
+
+  if (lastUpdateTime == 0 || (millis() - lastUpdateTime > 30000))
+  {
      lastUpdateTime = millis();
+
+    json_data = getData();
+    deserializeJson(temp_data, json_data);
 
      if (work_mode == 0) {
        Serial.println("Вимкнення реле");
