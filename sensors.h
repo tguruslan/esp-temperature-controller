@@ -14,7 +14,7 @@ float numLimit(float num,int lim){
   return resp;
 }
 
-String getData(){
+String getData(int calibrate_temp){
   if (myCCS811.dataAvailable())
   {
     myCCS811.readAlgorithmResults();
@@ -29,12 +29,12 @@ String getData(){
   object["cc811"]["co2"] = myCCS811.getCO2();
   object["cc811"]["tvoc"] = myCCS811.getTVOC();
 
-  object["bme280"]["temperature"] = numLimit(myBME280.readTempC(),2);
+  object["bme280"]["temperature"] = numLimit(myBME280.readTempC() + calibrate_temp,2);
   object["bme280"]["pressure"] = numLimit((myBME280.readFloatPressure() * 0.00750062),2);
   object["bme280"]["altitude"] = numLimit(myBME280.readFloatAltitudeMeters(),2);
 
   float h = numLimit(myHDC1080.readHumidity(),2);
-  float t = numLimit(myHDC1080.readTemperature(),2);
+  float t = numLimit(myHDC1080.readTemperature() + calibrate_temp,2);
 
   object["hdc1080"]["temperature"] = t;
   object["hdc1080"]["humidity"] = h;

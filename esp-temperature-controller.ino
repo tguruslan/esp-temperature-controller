@@ -68,15 +68,31 @@ String getTitle(String name){
   object["gateway"]="Основний шлюз";
   object["subnet"]="Маска підмережі";
   object["set_temp"]="Задана температура";
-
+  object["calibrate_temp"]="Калібрування температури";
   object["www_username"]="Логін для веб налаштувань";
   object["www_password"]="Пароль для веб налаштувань";
-
   object["humidity"]="Вологість повітря";
-  object["hdc1080"]["temperature"]="Температура";
+  object["temperature"]="Температура";
   object["dew_point"]="Точка роси";
-  object["heat_index"]="Відчувається як";
-  object["out_temp"]="Зовнішня температура";
+  object["altitude"]="Висота над рівнем моря";
+  object["pressure"]="Атмосферний тиск";
+  object["co2"]="Рівень CO2";
+  object["tvoc"]="Леткі органічні речовини";
+
+  return object[name];
+}
+
+String getUnit(String name){
+  StaticJsonDocument<256> doc;
+  JsonObject object = doc.to<JsonObject>();
+
+  object["humidity"]="%";
+  object["temperature"]="°C";
+  object["dew_point"]="°C";
+  object["altitude"]="метрів";
+  object["pressure"]="міліметрів ртутного стовпчика";
+  object["co2"]="частин на мільйон";
+  object["tvoc"]="частин на мільярд";
 
   return object[name];
 }
@@ -183,8 +199,29 @@ void setup(void) {
   www_password = config_settings["www_password"];
 
   server.on("/", []() {
-    json_data = getData();
+    json_data = getData(config_settings["calibrate_temp"].as<int>());
     server.send(200, "application/json", json_data);
+  });
+
+  server.on("/preview", []() {
+    json_data = getData(config_settings["calibrate_temp"].as<int>());
+    deserializeJson(temp_data, json_data);
+    JsonObject root = temp_data.as<JsonObject>();
+    String content;
+    content += getHeader("Данні датчиків");
+    content += "<table class='responsive-table'><tbody>";
+    content += "<tr><td>Показник</td><td>Значення</td><td>Одиниці виміру</td></tr>";
+
+    for (JsonPair sensors : root) {
+      JsonObject sensors_obj=sensors.value().as<JsonObject>();
+      for (JsonPair kv : sensors_obj){
+        content += "<tr><td>"+getTitle(kv.key().c_str())+"</td><td>"+kv.value().as<String>()+"</td><td>"+getUnit(kv.key().c_str())+"</td></tr>";
+      }
+    }
+    content += "</table></tbody>";
+    content += getFooter();
+
+    server.send(200, "text/html", content);
   });
 
   server.on("/off", []() {
@@ -259,7 +296,8 @@ void setup(void) {
         server.arg("subnet"),
         server.arg("set_temp"),
         server.arg("www_username"),
-        server.arg("www_password")
+        server.arg("www_password"),
+        server.arg("calibrate_temp")
       )) {
         content += "<h3>Помилка збереження</h3>";
       } else {
@@ -307,9 +345,10 @@ void setup(void) {
     content += "<div class='row'>";
     content += "<h3>Інші налаштування</h3>";
     for(String param : {
-      "set_temp",
       "www_username",
-      "www_password"
+      "www_password",
+      "set_temp",
+      "calibrate_temp"
     })
     {
         content += genInput(param,config_settings[param]);
@@ -358,7 +397,7 @@ void loop(void) {
   {
      lastUpdateTime = millis();
 
-    json_data = getData();
+    json_data = getData(config_settings["calibrate_temp"].as<int>());
     deserializeJson(temp_data, json_data);
 
      if (work_mode == 0) {
