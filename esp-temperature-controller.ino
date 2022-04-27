@@ -11,11 +11,11 @@
 #define APPSK  "TempSensor"
 #endif
 
+const char* www_username;
+const char* www_password;
+
 const char *ap_ssid = APSSID;
 const char *ap_password = APPSK;
-
-const char* www_username = "admin";
-const char* www_password = "admin";
 
 long lastUpdateTime = 0;
 long timing = 0;
@@ -69,6 +69,9 @@ String getTitle(String name){
   object["gateway"]="Основний шлюз";
   object["subnet"]="Маска підмережі";
   object["set_temp"]="Задана температура";
+
+  object["www_username"]="Логін для веб налаштувань";
+  object["www_password"]="Пароль для веб налаштувань";
 
   object["humidity"]="Вологість повітря";
   object["hdc1080"]["temperature"]="Температура";
@@ -134,11 +137,11 @@ void setup(void) {
 
   int run_app=0;
 
-  if (config_settings["ssid"].as<String>() != "null") {
+  if (config_settings["ssid"].as<String>() != "null" && config_settings["ssid"].as<String>() != "") {
     WiFi.mode(WIFI_STA);
     WiFi.begin(config_settings["ssid"].as<String>(), config_settings["password"].as<String>());
 
-    if (config_settings["ip"].as<String>() != "null") {
+    if (config_settings["ip"].as<String>() != "null" && config_settings["ip"].as<String>() != "") {
       String_to_IP(config_settings["ip"].as<String>(), ip_fin);
       String_to_IP(config_settings["gateway"].as<String>(), gateway_fin);
       String_to_IP(config_settings["subnet"].as<String>(), subnet_fin);
@@ -179,12 +182,19 @@ void setup(void) {
 
   json_data = getData();
 
+  www_username = config_settings["www_username"];
+  www_password = config_settings["www_password"];
+
   server.on("/", []() {
     server.send(200, "application/json", json_data);
   });
 
   server.on("/off", []() {
-    if (!server.authenticate(www_username, www_password)) {return server.requestAuthentication();}
+    if (config_settings["www_password"].as<String>() != "null" && config_settings["www_password"].as<String>() != "")
+    {
+      if (!server.authenticate(www_username, www_password)) {return server.requestAuthentication();}
+    }
+
     open_mode = 1;
     saveState(0);
     lastUpdateTime = 900000;
@@ -199,7 +209,10 @@ void setup(void) {
   });
 
   server.on("/on", []() {
-    if (!server.authenticate(www_username, www_password)) {return server.requestAuthentication();}
+    if (config_settings["www_password"].as<String>() != "null" && config_settings["www_password"].as<String>() != "")
+    {
+      if (!server.authenticate(www_username, www_password)) {return server.requestAuthentication();}
+    }
     open_mode = 1;
     saveState(1);
     lastUpdateTime = 900000;
@@ -214,7 +227,10 @@ void setup(void) {
   });
 
   server.on("/auto", []() {
-    if (!server.authenticate(www_username, www_password)) {return server.requestAuthentication();}
+    if (config_settings["www_password"].as<String>() != "null" && config_settings["www_password"].as<String>() != "")
+    {
+      if (!server.authenticate(www_username, www_password)) {return server.requestAuthentication();}
+    }
     open_mode = 1;
     saveState(2);
     lastUpdateTime = 900000;
@@ -240,7 +256,10 @@ void setup(void) {
   });
 
   server.on("/config", []() {
-    if (!server.authenticate(www_username, www_password)) {return server.requestAuthentication();}
+    if (config_settings["www_password"].as<String>() != "null" && config_settings["www_password"].as<String>() != "")
+    {
+      if (!server.authenticate(www_username, www_password)) {return server.requestAuthentication();}
+    }
     String content;
     content += getHeader("Налаштування");
 
@@ -251,7 +270,9 @@ void setup(void) {
         server.arg("ip"),
         server.arg("gateway"),
         server.arg("subnet"),
-        server.arg("set_temp")
+        server.arg("set_temp"),
+        server.arg("www_username"),
+        server.arg("www_password")
       )) {
         content += "<h3>Помилка збереження</h3>";
       } else {
@@ -297,9 +318,11 @@ void setup(void) {
     }
     content += "</div>";
     content += "<div class='row'>";
-    content += "<h3>Налаштування температур</h3>";
+    content += "<h3>Інші налаштування</h3>";
     for(String param : {
-      "set_temp"
+      "set_temp",
+      "www_username",
+      "www_password"
     })
     {
         content += genInput(param,config_settings[param]);
@@ -323,7 +346,7 @@ void setup(void) {
 void loop(void) {
   ArduinoOTA.handle();
 
-  if (config_settings["ssid"].as<String>() != "null") {
+  if (config_settings["ssid"].as<String>() != "null" && config_settings["ssid"].as<String>() != "") {
     if (WiFi.status() != WL_CONNECTED){
       unsigned long currentMillis = millis();
       if (currentMillis - previousMillis >=interval) {

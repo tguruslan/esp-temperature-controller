@@ -16,7 +16,7 @@ String loadConfig() {
   return buf.get();
 }
 
-bool saveConfig(String ssid, String password, String ip, String gateway, String subnet, String set_temp) {
+bool saveConfig(String ssid, String password, String ip, String gateway, String subnet, String set_temp, String www_username, String www_password) {
   const size_t capacity = 1024;
   DynamicJsonDocument doc(capacity);
 
@@ -27,6 +27,9 @@ bool saveConfig(String ssid, String password, String ip, String gateway, String 
   doc["subnet"] = subnet;
 
   doc["set_temp"] = set_temp;
+
+  doc["www_username"] = www_username;
+  doc["www_password"] = www_password;
 
   File configFile = LittleFS.open("/config.json", "w");
   if (!configFile) {

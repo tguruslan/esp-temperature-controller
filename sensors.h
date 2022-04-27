@@ -3,7 +3,7 @@
 #include <SparkFunBME280.h>     // ver 1.2.0
 #include <ClosedCube_HDC1080.h>
 
-#define CCS811_ADDR 0x5A //I2C Address
+#define CCS811_ADDR 0x5A //I2C Address A or B
 
 CCS811 myCCS811(CCS811_ADDR);
 BME280 myBME280;
