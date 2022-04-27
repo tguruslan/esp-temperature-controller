@@ -17,45 +17,38 @@ const char* www_password;
 const char *ap_ssid = APSSID;
 const char *ap_password = APPSK;
 
-long lastUpdateTime = 0;
-long previousMillis = millis();
-long interval = 30000;
-
-int work_mode;
-int open_settings = 1;
-int open_mode = 1;
+long lastUpdateTime = 0, previousMillis = 0, interval = 30000;
+int work_mode, open_settings = 1, open_mode = 1, run_app=0;
 
 const size_t capacity = 1024;
 DynamicJsonDocument config_settings(capacity);
 StaticJsonDocument<256> temp_data;
 String json_data;
 
-IPAddress ip_fin;
-IPAddress gateway_fin;
-IPAddress subnet_fin;
+IPAddress ip_fin, gateway_fin, subnet_fin; 
 
 ESP8266WebServer server(80);
 
 String getHeader(String title){
-String html = "<!DOCTYPE html>";
-html += "<header>";
-html += "<meta charset='utf-8'>";
-html += "<title>"+title+"</title>";
-html += "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css'>";
-html += "<script src='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js'></script>";
-html += "</header>";
-html += "<body>";
-html += "<div class='container'>";
-html += "<center><h1>"+title+"</h1></center>";
-return html;
+  String html = "<!DOCTYPE html>";
+  html += "<header>";
+  html += "<meta charset='utf-8'>";
+  html += "<title>"+title+"</title>";
+  html += "<link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css'>";
+  html += "<script src='https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js'></script>";
+  html += "</header>";
+  html += "<body>";
+  html += "<div class='container'>";
+  html += "<center><h1>"+title+"</h1></center>";
+  return html;
 }
 
 
 String getFooter(){
-String html = "</div>";
-html += "</body>";
-html += "</html>";
-return html;
+  String html = "</div>";
+  html += "</body>";
+  html += "</html>";
+  return html;
 }
 
 String getTitle(String name){
@@ -150,8 +143,6 @@ void setup(void) {
     open_mode = 0;
   }
 
-  int run_app=0;
-
   if (config_settings["ssid"].as<String>() != "null" && config_settings["ssid"].as<String>() != "") {
     WiFi.mode(WIFI_STA);
     WiFi.begin(config_settings["ssid"].as<String>(), config_settings["password"].as<String>());
@@ -167,7 +158,7 @@ void setup(void) {
     Serial.println("");
 
     int boot_try_count = 0;
-    while (WiFi.status() != WL_CONNECTED) {
+    while (WiFi.status() != WL_CONNECTED && run_app == 0) {
       delay(500);
       boot_try_count++;
       Serial.print(".");
@@ -371,18 +362,6 @@ void setup(void) {
 
 void loop(void) {
   ArduinoOTA.handle();
-
-  if (config_settings["ssid"].as<String>() != "null" && config_settings["ssid"].as<String>() != "") {
-    if (WiFi.status() != WL_CONNECTED){
-      unsigned long currentMillis = millis();
-      if (currentMillis - previousMillis >=interval) {
-        ESP.restart();
-      }
-      previousMillis = currentMillis;
-    }
-  }
-
-
   if (open_settings == 1) {
     deserializeJson(config_settings, loadConfig());
     open_settings = 0;
@@ -393,9 +372,13 @@ void loop(void) {
     open_mode = 0;
   }
 
-  if (lastUpdateTime == 0 || (millis() - lastUpdateTime > 30000))
+  if (lastUpdateTime == 0 || (millis() - lastUpdateTime > interval))
   {
-     lastUpdateTime = millis();
+    lastUpdateTime = millis();
+
+    if (WiFi.status() != WL_CONNECTED && run_app == 0){
+      ESP.restart();
+    }
 
     json_data = getData(config_settings["calibrate_temp"].as<int>());
     deserializeJson(temp_data, json_data);
