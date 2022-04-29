@@ -202,13 +202,23 @@ void setup(void) {
     JsonObject root = temp_data.as<JsonObject>();
     String content;
     content += getHeader("Данні датчиків");
-    content += "<table class='responsive-table'><tbody>";
-    content += "<tr><td>Показник</td><td>Значення</td><td>Одиниці виміру</td></tr>";
+    content += "<table class='responsive-table'><thead>";
+    content += "<tr><td>Датчик</td><td>Величина</td><td>Значення</td><td>Одиниці виміру</td></tr>";
+    content += "</thead><tbody>";
 
     for (JsonPair sensors : root) {
       JsonObject sensors_obj=sensors.value().as<JsonObject>();
+      int index=0;
       for (JsonPair kv : sensors_obj){
-        content += "<tr><td>"+getTitle(kv.key().c_str())+"</td><td>"+kv.value().as<String>()+"</td><td>"+getUnit(kv.key().c_str())+"</td></tr>";
+        content += "<tr>";
+        if (index == 0){
+          content += "<td rowspan=\""+String(sensors_obj.size())+"\">"+String(sensors.key().c_str())+"</td>";
+        }
+        content += "<td>"+getTitle(kv.key().c_str())+"</td>";
+        content += "<td>"+kv.value().as<String>()+"</td>";
+        content += "<td>"+getUnit(kv.key().c_str())+"</td>";
+        content += "</tr>";
+        index++;
       }
     }
     content += "</table></tbody>";
