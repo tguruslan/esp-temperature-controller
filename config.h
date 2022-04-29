@@ -16,7 +16,18 @@ String loadConfig() {
   return buf.get();
 }
 
-bool saveConfig(String ssid, String password, String ip, String gateway, String subnet, String set_temp, String www_username, String www_password, String calibrate_temp) {
+bool saveConfig(
+  String ssid,
+  String password,
+  String ip,
+  String gateway,
+  String subnet,
+  String set_temp,
+  String www_username,
+  String www_password,
+  String calibrate_temp,
+  String temp_delta
+) {
   const size_t capacity = 1024;
   DynamicJsonDocument doc(capacity);
 
@@ -25,10 +36,9 @@ bool saveConfig(String ssid, String password, String ip, String gateway, String 
   doc["ip"] = ip;
   doc["gateway"] = gateway;
   doc["subnet"] = subnet;
-
   doc["set_temp"] = set_temp;
   doc["calibrate_temp"] = calibrate_temp;
-
+  doc["temp_delta"] = temp_delta;
   doc["www_username"] = www_username;
   doc["www_password"] = www_password;
 

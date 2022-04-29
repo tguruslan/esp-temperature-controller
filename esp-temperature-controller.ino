@@ -19,6 +19,7 @@ const char *ap_password = APPSK;
 
 long lastUpdateTime = 0, previousMillis = 0, interval = 30000;
 int work_mode, open_settings = 1, open_mode = 1, run_app=0;
+float temp_delta = 1; // якщо температура відрізняється від заданої на данне число виконати дію
 
 const size_t capacity = 1024;
 DynamicJsonDocument config_settings(capacity);
@@ -52,7 +53,7 @@ String getFooter(){
 }
 
 String getTitle(String name){
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<512> doc;
   JsonObject object = doc.to<JsonObject>();
 
   object["ssid"]="Назва мережі";
@@ -61,6 +62,7 @@ String getTitle(String name){
   object["gateway"]="Основний шлюз";
   object["subnet"]="Маска підмережі";
   object["set_temp"]="Задана температура";
+  object["temp_delta"]="Різниця температур для дій";
   object["calibrate_temp"]="Калібрування температури";
   object["www_username"]="Логін для веб налаштувань";
   object["www_password"]="Пароль для веб налаштувань";
@@ -76,7 +78,7 @@ String getTitle(String name){
 }
 
 String getUnit(String name){
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<128> doc;
   JsonObject object = doc.to<JsonObject>();
 
   object["humidity"]="%";
@@ -190,12 +192,12 @@ void setup(void) {
   www_password = config_settings["www_password"];
 
   server.on("/", []() {
-    json_data = getData(config_settings["calibrate_temp"].as<int>());
+    json_data = getData(config_settings["calibrate_temp"].as<float>());
     server.send(200, "application/json", json_data);
   });
 
   server.on("/preview", []() {
-    json_data = getData(config_settings["calibrate_temp"].as<int>());
+    json_data = getData(config_settings["calibrate_temp"].as<float>());
     deserializeJson(temp_data, json_data);
     JsonObject root = temp_data.as<JsonObject>();
     String content;
@@ -288,7 +290,8 @@ void setup(void) {
         server.arg("set_temp"),
         server.arg("www_username"),
         server.arg("www_password"),
-        server.arg("calibrate_temp")
+        server.arg("calibrate_temp"),
+        server.arg("temp_delta")
       )) {
         content += "<h3>Помилка збереження</h3>";
       } else {
@@ -339,7 +342,8 @@ void setup(void) {
       "www_username",
       "www_password",
       "set_temp",
-      "calibrate_temp"
+      "calibrate_temp",
+      "temp_delta"
     })
     {
         content += genInput(param,config_settings[param]);
@@ -380,7 +384,7 @@ void loop(void) {
       ESP.restart();
     }
 
-    json_data = getData(config_settings["calibrate_temp"].as<int>());
+    json_data = getData(config_settings["calibrate_temp"].as<float>());
     deserializeJson(temp_data, json_data);
 
      if (work_mode == 0) {
@@ -390,10 +394,15 @@ void loop(void) {
        Serial.println("Ввімкнення реле");
        digitalWrite(D3, LOW);
      }else{
-       if(temp_data["hdc1080"]["temperature"].as<int>() < (config_settings["set_temp"].as<int>() - 2)){
+       if (config_settings["temp_delta"].as<String>() != "null" && config_settings["temp_delta"].as<String>() != "")
+       {
+         temp_delta=config_settings["temp_delta"].as<float>();
+       }
+
+       if(temp_data["hdc1080"]["temperature"].as<float>() < (config_settings["set_temp"].as<float>() - temp_delta)){
          Serial.println("Ввімкнення реле");
          digitalWrite(D3, LOW);
-       } else if (temp_data["hdc1080"]["temperature"].as<int>() > (config_settings["set_temp"].as<int>() + 2)) {
+       } else if (temp_data["hdc1080"]["temperature"].as<float>() > (config_settings["set_temp"].as<float>() + temp_delta)) {
          Serial.println("Вимкнення реле");
          digitalWrite(D3, HIGH);
        } else {

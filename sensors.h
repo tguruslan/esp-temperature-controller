@@ -14,7 +14,7 @@ float numLimit(float num,int lim){
   return resp;
 }
 
-String getData(int calibrate_temp){
+String getData(float calibrate_temp){
   if (myCCS811.dataAvailable())
   {
     myCCS811.readAlgorithmResults();
